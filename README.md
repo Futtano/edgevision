@@ -4,7 +4,7 @@ A learning project in production computer vision: detect and track objects in ae
 
 The goal is to develop deep-learning engineering and system-design skills through a small, explainable implementation. Each module produces working software, reproducible evidence, and notes explaining its internals and tradeoffs.
 
-**Status:** planning only. No models have been trained, benchmarks measured, or service implemented.
+**Status:** the first CPU video-inference slice is implemented and smoke-tested. No model has been trained, aerial accuracy evaluated, or streaming service implemented.
 
 ## Start here
 
@@ -23,6 +23,17 @@ The core project uses recorded video, one active stream, one tracker, and one de
 
 This is a perception engineering project. Flight control, navigation, sensor fusion, and safety validation are outside its scope.
 
-## First milestone
+## Begin the first module
 
-Module 00 is in progress: the [scope notes](docs/modules/00-scope.md) record your Ryzen 7 8840U / Radeon 780M machine, 32 GB RAM, and availability of up to 10 hours/week. Local deployment starts on CPU, with possible external GPU sessions for fine-tuning. The operating scenario and success criteria remain to be defined. Module 01 then delivers the first thin vertical slice: a short local video through a pretrained detector to inspectable JSON results. See the [roadmap](docs/roadmap.md) before starting implementation.
+Follow the [frame-by-frame learning walkthrough](docs/modules/01-inference.md) for setup, a runnable demo, a coordinate-transform exercise, and the actual model tensor trace. See the [smoke report](docs/reports/module01-smoke.md) for measured observations and limitations.
+
+The prepared workspace has a model and demo clip. Run a new inference session with:
+
+```bash
+.venv/bin/edgevision infer --config configs/inference.yaml \
+  --output-dir artifacts/runs/my-first-run
+```
+
+Each run writes JSONL detections, original-frame overlays, resolved configuration, provenance, and a completion/failure summary. Choose a new output directory each time. For a fresh checkout, follow the setup instructions in the walkthrough first.
+
+Our [scope notes](docs/modules/00-scope.md) record the CPU deployment target, development environment, provisional operating budgets, and availability of up to 10 learning hours/week.

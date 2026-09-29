@@ -1,6 +1,6 @@
 # System architecture
 
-This is the intended architecture, not a description of implemented software. Add components only when their roadmap module needs them.
+This diagram describes the target architecture. Module 01 implements local decode, explicit preprocessing, a YOLO detector adapter, coordinate restoration, JSONL/overlay output, validated config, and run provenance in one synchronous process. Queues, tracking, training, ONNX, API, and metrics remain planned.
 
 ## Offline development and online inference
 

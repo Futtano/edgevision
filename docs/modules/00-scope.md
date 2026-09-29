@@ -1,42 +1,53 @@
 # 00 — Scope and budgets
 
-Status: in progress. Hardware and availability are user-provided; no performance measurements have been run.
+Status: initial planning gate complete. Targets below are provisional design hypotheses, not measured service guarantees. Hardware inventory was inspected on 2026-09-29; learner availability came from the user.
 
-## Question
+## Operating scenario
 
-What useful aerial-perception system can we operate within the available machine, time, and training budget? See the [module 00 gate](../roadmap.md).
+Analyze one recorded aerial urban-road video for people and road users. Begin with offline processing that preserves every frame. Later, paced replay will test whether a bounded queue can maintain fresh results under load. No flight control or live-network source is required.
 
-## Known constraints
+The first technical reference clip is eight repeats of the packaged Ultralytics bus image, encoded at 10 FPS and 540×720. It exercises video plumbing and visible detections. It is not aerial footage or an evaluation dataset. Module 02 will select a licensed, documented aerial reference sequence and class mapping. Module 01 retains all COCO-80 outputs; the target product's people/vehicle/bicycle classes are not yet dataset labels.
 
-| Item | Current information |
+## Environment and budgets
+
+| Item | Initial decision / observation |
 | --- | --- |
-| Machine | Minisforum V3 3-in-1 notebook |
-| CPU | AMD Ryzen 7 8840U |
-| Graphics | Integrated Radeon 780M |
-| RAM | 32 GB |
-| Learning time | Up to 10 hours/week |
-| External compute | Free or low-cost GPU/spot sessions are possible |
-| Cloud budget | No provider or numerical spending limit established |
-| OS/runtime and free storage | To inventory before environment setup |
+| Machine | Minisforum V3, Ryzen 7 8840U / Radeon 780M, 32 GB physical RAM (user-provided) |
+| Development environment | Ubuntu 24.04.4 under WSL2, x86-64, Linux 6.6.87.2 |
+| CPU capacity | 8 cores / 16 logical threads visible; start inference with 4 PyTorch threads |
+| WSL resources | Approximately 25 GiB visible RAM, 764 GiB available filesystem space at inspection |
+| Python/tooling | System Python 3.12.3, uv 0.12.12; local locked virtual environment |
+| Learning time | Up to 10 hours/week; roadmap estimate 9–13 active weeks plus contingency |
+| Reference runtime | CPU PyTorch initially; CPU ONNX in module 06 |
+| Initial input | Batch 1, model input 320×320; preserve source aspect ratio with padding |
+| Future representative workload | One approximately 1280×720 aerial clip; paced replay at 5 input frames/s initially |
+| Provisional throughput target | Sustain 5 completed frames/s at the declared workload |
+| Provisional freshness target | p95 scheduled-arrival-to-result ≤500 ms in paced replay, after startup |
+| Provisional process memory ceiling | 4 GiB resident memory; measure before treating this as an acceptance limit |
+| Initial training budget | No full training runs now; tiny correctness exercises only |
+| Cloud budget | $0 for this milestone; no provider or paid session selected |
 
-## Initial design consequences
+These targets deliberately leave room for CPU deployment. The eight-frame smoke run cannot validate sustained throughput, freshness, or memory limits. A miss will trigger profiling and an explicit requirement/workload revision rather than hidden frame dropping.
 
-CPU PyTorch and ONNX Runtime are the reference local paths. The integrated GPU is not a CUDA device; other acceleration backends require separate compatibility and performance checks. TensorRT is outside the core local deployment scope.
+## Provisional per-frame stage budget
 
-Use local CPU runs for data validation, inference, tests, service behavior, and tiny training sanity checks. Plan meaningful fine-tuning around external GPU availability. Allow separate CPU and training dependency profiles if accelerator dependencies require them.
+| Stage | Planning allocation |
+| --- | --- |
+| Decode to RGB | 10 ms |
+| Resize/pad/tensor conversion | 10 ms |
+| Model forward | 150 ms |
+| Postprocessing / future tracking | 10 ms |
+| Serialization/output | 20 ms |
+| Total sequential processing | 200 ms → at most 5 FPS before queueing overhead |
 
-Keep model input size separate from source-video size. Resizing reduces compute but can lose small-object detail; measure that tradeoff. Set throughput and freshness targets after the first local benchmark.
+A model with a 25 ms forward pass does not guarantee 40 FPS: the other stages also take time, and queueing adds delay without doing useful work. Offline mode waits and preserves frames. Future paced replay will bound queues and expose dropped frames to preserve freshness; it must also handle the resulting tracking gaps.
 
-For interruptible training, validate save/resume in a short run before a full run. Preserve model, optimizer/scheduler state, progress, RNG state where supported, resolved config, and data identity in persistent storage. Document what the selected framework restores. Evaluate exported artifacts locally: cloud GPU speed is not local deployment speed.
+## Compute portability
 
-## Remaining completion work
+The Radeon 780M is not a CUDA target. Other integrated-GPU backends are optional experiments; TensorRT is outside the core local scope. Use local CPU for data validation, inference, tests, and service work, and consider external GPU sessions for meaningful fine-tuning later.
 
-- Inventory OS/runtime, CPU threads, and free disk space.
-- Choose the reference clip, source rate/resolution, and initial classes.
-- Draft stage budgets, throughput/freshness targets, and memory limits; validate them in module 01.
-- Establish maximum cloud spend and per-run duration before any paid session; free-only remains a valid initial constraint.
-- Specify checkpoint persistence and compute/storage cleanup.
+Before any paid training, establish maximum total spend and run duration. On interruptible compute, validate save/resume and persist checkpoints, optimizer/scheduler/progress state, RNG state where supported, resolved config, and data identity outside the ephemeral instance. Stop compute when done and account for retained storage. No cloud resources have been provisioned.
 
-## What we have established
+## Lessons and open questions
 
-Learning and implementation can start locally without waiting for a cloud GPU. Training compute and deployment compute are separate design choices. No claims about achievable FPS or training duration have been measured.
+Training compute and deployment compute are separate decisions. WSL-visible memory differs from physical machine RAM, and latency budgets belong to the whole pipeline. The immediate open questions are representative aerial workload selection and measured local performance; neither blocks learning the first inference contract.

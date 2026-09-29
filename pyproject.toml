@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "edgevision"
+version = "0.1.0"
+description = "An explainable aerial perception pipeline"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "av>=14,<17",
+  "numpy>=2,<3",
+  "pillow>=11,<13",
+  "pydantic>=2.10,<3",
+  "pyyaml>=6,<7",
+]
+
+[project.optional-dependencies]
+inference = ["ultralytics>=8.3,<9", "torch>=2.6,<3", "torchvision>=0.21,<1"]
+
+[project.scripts]
+edgevision = "edgevision.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+torchvision = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

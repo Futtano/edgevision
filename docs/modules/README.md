@@ -1,11 +1,11 @@
 # Module learning notes
 
-No implementation modules have been completed yet. This index tracks actual progress; planned learning objectives live in the [roadmap](../roadmap.md).
+This index tracks implementation and evidence, not assumed learner mastery; planned learning objectives live in the [roadmap](../roadmap.md).
 
 | Module | Status | Evidence |
 | --- | --- | --- |
-| [00 — Scope and budgets](00-scope.md) | In progress | Hardware and weekly availability recorded; operating targets pending |
-| 01 — Inference slice | Not started | — |
+| [00 — Scope and budgets](00-scope.md) | Initial planning complete | Scenario, inspected environment, provisional budgets |
+| [01 — Inference slice](01-inference.md) | Implemented and smoke-tested; learner walkthrough ready | CPU tests, real detector run, tensor trace, fresh environment check |
 | 02 — Data and evaluation | Not started | — |
 | 03 — CNN baseline | Not started | — |
 | 04 — Transformer comparison | Not started | — |

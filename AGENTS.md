@@ -11,4 +11,4 @@ This repository is both a production computer-vision learning project and reusab
 - Preserve dataset provenance, class/ignore semantics, and split integrity. Keep large datasets, video, weights, caches, and experiment stores out of Git.
 - Do not launch expensive training or add paid infrastructure without an established compute budget. First run a bounded smoke check.
 
-The initial repository contains planning documentation only; planned paths and dependencies are not yet implemented or installed.
+Module 01 provides a synchronous CPU inference CLI with optional inference dependencies. Read its notes for tested behavior and known limits. Later roadmap components remain planned. Keep model/data downloads outside CI; use the locked base environment for tests.

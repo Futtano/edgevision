@@ -1,0 +1,12 @@
+# Paths resolve relative to this file, independently of the shell working directory.
+source: ../data/smoke/bus.mp4
+weights: ../artifacts/models/yolov8n.pt
+output_dir: ../artifacts/runs/first-inference
+input_size: 320
+confidence: 0.25
+nms_iou: 0.7
+max_detections: 300
+max_frames: 30
+threads: 4
+device: cpu
+save_overlays: true
