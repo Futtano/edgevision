@@ -6,7 +6,7 @@ Status: implementation and smoke checks complete. The walkthrough and learner ex
 
 How does a video frame become detections that a different component can safely use? The first boundary is between **pixels and predictions**. Getting it right requires explicit image layout, geometry, labels, and timing—not just a successful model call.
 
-Read [scope and budgets](00-scope.md) first. You need NumPy shape/indexing basics and the idea of a bounding box; CNN training details come later.
+Read [the prerequisite concepts](../prerequisites.md) and [scope and budgets](00-scope.md) first. The prerequisite page gives you the array, box, pipeline, timing, and project vocabulary used here; CNN training details come later.
 
 ## What we built
 
@@ -114,9 +114,11 @@ There are `40² + 20² + 10² = 2100` candidate positions. Those are not 2,100 f
 
 The trace also contains `boxes: [1, 64, 2100]` in the head's auxiliary output: the 64 channels encode four sets of 16 localization bins before distribution decoding, not 64 classes. We will study the loss and assignment machinery in module 03. The present purpose is to distinguish features, candidate predictions, and final detections.
 
-Because we pass an already-preprocessed tensor into Ultralytics, its returned coordinates refer to our square input. Our adapter owns the inverse transform. If we instead passed the original image through the vendor's image path, that path would own preprocessing and restoration; applying our inverse again would be wrong. The input-layout distinction is documented in [Ultralytics prediction](https://docs.ultralytics.com/modes/predict/).
+Because we pass an already-preprocessed tensor into Ultralytics, its returned coordinates refer to our square input. Our adapter owns the inverse transform. If we instead passed the original image through Ultralytics' image path, that path would own preprocessing and restoration; applying our inverse again would be wrong. The input-layout distinction is documented in [Ultralytics prediction](https://docs.ultralytics.com/modes/predict/).
 
 The canonical label space is **COCO-80**, including `person` and `bus`. It is not VisDrone, and class IDs must not be carried into that dataset without explicit mapping. The smoke model is a temporary learning reference rather than the final aerial detector choice.
+
+The detector protocol lets the pipeline use any object with a compatible `detect()` method. The YOLO adapter imports its optional libraries only when needed and returns our own detection records. Its Ultralytics `predict()` return annotation includes both lists and iterators, plus embedding tensors: we request `stream=False`, consume the first result with `next(iter(predictions))`, and check that it is a `Results` object containing boxes. This resolves the iterator-indexing type error without suppressing it. Tests simulate those Ultralytics return variants without installing the inference dependencies; empty boxes remain a valid successful prediction, while a missing result or wrong result type raises a clear error.
 
 ## Experiment, observation, and debugging
 
@@ -124,13 +126,13 @@ Hypothesis: an explicitly letterboxed RGB tensor plus inverse geometry should yi
 
 Observed: eight records, frame indices 0–7, source times 0.0–0.7 s, and a successful EOF summary. The first frame contains three person detections and one bus detection. The first overlay was visually inspected; the boxes align with the original scene. Synthetic tests cover empty detections, invalid coordinates, frame limits, and partial failure. See the [smoke evidence](../reports/module01-smoke.md) for identifiers and timings.
 
-A real integration issue appeared during inspection: the vendor's `select_device()` resets PyTorch CPU threads during lazy predictor setup. Setting four threads before constructing YOLO did not preserve the setting. We now reapply it through `on_predict_start`, after setup and before prediction. The inspection script verifies the effective value is four. Vendor warmup occurs before that callback and is part of first-call overhead; the setting controls the processing stage, not every initialization operation.
+A real integration issue appeared during inspection: Ultralytics' `select_device()` resets PyTorch CPU threads during lazy predictor setup. Setting four threads before constructing YOLO did not preserve the setting. We now reapply it through `on_predict_start`, after setup and before prediction. The inspection script verifies the effective value is four. In the installed Ultralytics 8.4.166 predictor, this callback runs before the first warmup and inference; warmup still contributes to first-call overhead. The thread setting applies to PyTorch CPU operations across the process, not separately to each detector instance.
 
 The initial environment also selected Python 3.13 despite the project's 3.12 requirement. Explicitly selecting `/usr/bin/python3` (verified as 3.12.3) fixed setup. The repository includes `.python-version`; use the explicit interpreter if your shell/environment overrides it. This is why a lockfile and a Python version both matter. The CPU-wheel source follows the [uv PyTorch integration pattern](https://docs.astral.sh/uv/guides/integration/pytorch/).
 
 ## Timing semantics and limits
 
-`decode_ms` includes decoding and conversion to an RGB array. `detector_ms` includes our preprocessing, vendor prediction/postprocessing, restoration, and detection validation. It excludes JSON serialization and overlays; the first value also includes lazy runtime setup. It is not pure neural-network forward time.
+`decode_ms` includes decoding and conversion to an RGB array. `detector_ms` includes our preprocessing, Ultralytics prediction/postprocessing, restoration, and detection validation. It excludes JSON serialization and overlays; the first value also includes lazy runtime setup. It is not pure neural-network forward time.
 
 `source_time_s` derives from presentation timestamp × time base, not `frame_index / FPS`; it can be absent. `ingest_monotonic_s` is host time after decoding. Subtracting those two clock domains would not measure latency. Full pipeline throughput, sustained frame age, memory ceilings, and p95/p99 need the later benchmark protocol.
 
@@ -143,5 +145,7 @@ The CPU suite verifies geometry, validation, real video decoding with synthetic 
 .venv/bin/ruff format --check .
 .venv/bin/pytest -q
 ```
+
+The adapter typing update on 2026-10-03 passed all 32 tests and `ty check src/edgevision/detector.py --python .venv/bin/python` (ty was run with `uvx`). The new tests cover list/iterator predictions, tensor/NumPy box storage, empty boxes, and invalid Ultralytics results without inference dependencies. An eight-frame real-model smoke run also completed at EOF; its config, manifest, predictions, and summary are saved locally under `artifacts/runs/module01-adapter-types/`, run ID `5083fcdf-7272-42e4-92a7-f75ad25a2260`. These are integration checks, not new performance benchmarks.
 
 A fresh environment was also used to repeat real-model inference from the lockfile; see the report. No GPU or dataset/model downloads are required by CI tests. The learner's immediate next step is to inspect one JSON record and its overlay, work through the coordinate exercise, and explain where the 2,100 candidates come from. Module 02 then replaces convenient demo assumptions with audited aerial data and trustworthy evaluation.

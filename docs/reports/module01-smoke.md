@@ -27,7 +27,7 @@ Eight frames were processed in order, with presentation times from 0.0 to 0.7 se
 
 `detector_ms` includes preprocessing, prediction/postprocessing, inverse geometry, and record validation. It excludes decode, serialization, and overlay output. Run elapsed time also includes imports, file hashing, model loading, and output. There was no prescribed warmup, no controlled competing workload, and no meaningful sample size for tail latency. Do not invert the median and present it as end-to-end FPS. The provisional 5 FPS/500 ms freshness/4 GiB memory goals remain unvalidated.
 
-The initial exploratory run used the vendor-reset thread setting; it remains at `artifacts/runs/first-inference/` but is excluded from this report. Thread count was fixed and verified before collecting the reported run.
+The initial exploratory run used the thread setting reset by Ultralytics; it remains at `artifacts/runs/first-inference/` but is excluded from this report. Thread count was fixed and verified before collecting the reported run.
 
 ## Reproduction and checks
 

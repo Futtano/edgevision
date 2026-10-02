@@ -1,0 +1,43 @@
+# Prerequisites for the first EdgeVision walkthrough
+
+This is the small set of ideas you need to follow [Module 01: video inference](modules/01-inference.md). Read the short explanations first; the links are optional deeper study. You can learn the later modules' training, tracking, and deployment details when you reach them.
+
+## Computer vision and tensors
+
+| Concept | What you need to know here | Go deeper |
+| --- | --- | --- |
+| Image as an array | A color frame is a grid of numbers. Its shape `(height, width, 3)` has three color channels per pixel. `uint8` usually holds channel values from 0 to 255. `frame[y, x]` addresses row `y`, column `x`. | [NumPy array fundamentals](https://numpy.org/doc/stable/user/basics.html) and [indexing](https://numpy.org/doc/stable/user/basics.indexing.html) |
+| Channel order and tensor layout | RGB and BGR assign different meanings to the same three numbers. The model takes `(batch, channels, height, width)` (BCHW), so shape `(1, 3, 320, 320)` means one 320-pixel-square image. Check `shape`, `dtype`, and device at each boundary. | [PyTorch tensors](https://docs.pytorch.org/tutorials/beginner/basics/tensorqs_tutorial.html) and [Ultralytics input formats](https://docs.ultralytics.com/modes/predict/) |
+| Scaling and padding | We shrink a frame to fit a 320×320 square while keeping its aspect ratio, then fill the unused area with padding. This is *letterboxing*. Divide `uint8` pixel values by 255 to make `float32` inputs in `[0, 1]`; this changes the range, not the channel order. | [Our worked transform](modules/01-inference.md#follow-the-geometry-by-hand) and [Ultralytics image size/padding behavior](https://docs.ultralytics.com/modes/predict/) |
+| Box coordinates | A detection box is `(x1, y1, x2, y2)` with x measured rightward and y downward from the upper-left image corner. In this project its edges are continuous pixel coordinates, so width is `x2 - x1`. A box in the padded model input must be unpadded and rescaled before drawing it on the source frame. | [Our geometry code](../src/edgevision/geometry.py) and [Torchvision's box convention](https://docs.pytorch.org/vision/main/generated/torchvision.ops.nms.html) |
+| Candidate versus detection | A detector considers many candidate boxes and class scores. Confidence filtering removes weak candidates; non-maximum suppression (NMS) removes high-overlap duplicates. A candidate position is not a confirmed object. The Ultralytics adapter already performs NMS. | [Our model trace](modules/01-inference.md#follow-the-model-internals) and [NMS definition](https://docs.pytorch.org/vision/main/generated/torchvision.ops.nms.html) |
+
+**Worked coordinate example.** Dimensions here are **width × height**: the smoke frame is 540 pixels wide and 720 pixels tall. The model needs a 320×320 square. To keep the whole frame visible without stretching it, scale both dimensions by the smaller of `320 / 540` and `320 / 720`, which is `320 / 720 = 4/9`. The picture becomes **240×320**. The remaining 80 pixels of width are blank padding: **40 on the left and 40 on the right**.
+
+The model measures x from the left edge of the *padded square*. If it predicts `x = 100`, the point is only `100 - 40 = 60` pixels into the resized picture. Undo the resize using the width ratio `540 / 240 = 2.25`: `60 × 2.25 = 135`. So model x = 100 refers to **original-frame x = 135**. Forgetting to subtract the padding would place the point at x = 225, visibly too far right.
+
+**Try the landscape case:** turn the dimensions around to a 720×540 frame. It becomes 320×240, with **40 pixels above and below**. There is no left padding, so model x = 100 maps to `100 × 720 / 320 = 225` in the original frame. For model y = 100, subtract the *top* padding: `(100 - 40) × 540 / 240 = 135`. The general rule is: **subtract padding on the relevant axis, then undo that axis's resize**. See the [implementation and tests](../src/edgevision/geometry.py) for the rounding case where the effective x and y scales differ slightly.
+
+## System design
+
+| Concept | What you need to know here | Go deeper |
+| --- | --- | --- |
+| Pipeline and contract | Each stage accepts a defined input and returns a defined output: decoder → preprocessor → detector → result writer. A *contract* specifies shape, coordinate space, units, labels, and possible failure. An overlay that looks plausible is not enough if another stage interprets its boxes differently. | [Our architecture and records](architecture.md) |
+| State and failure | Module 01 processes one frame at a time. EOF means the video ended normally; a decode or detector error means the run failed. A JSONL file may contain valid earlier frames even when the run's final status is `failed`, so check `summary.json`. | [Our pipeline code](../src/edgevision/pipeline.py) |
+| Throughput versus latency | Throughput counts completed frames per second. Latency is the time one frame spends in a specified part of the system. Decode, preprocessing, inference, writing, and queue wait all consume time. Our `detector_ms` includes more than the neural-network forward pass; first-call setup makes it different from later calls. | [Our measurement protocol](evaluation.md#runtime-measurement) and [Google SRE on latency distributions](https://sre.google/sre-book/service-level-objectives/) |
+| Two kinds of time | A video's presentation timestamp says when a frame belongs in the video. A monotonic host clock can measure elapsed processing time. They have different origins; subtracting one from the other does not give latency. | [PyAV timestamps and time bases](https://pyav.org/docs/stable/api/time.html) |
+
+When paced replay arrives in Module 07, queues and overload policies will matter. For now, the offline loop waits for each frame to finish, preserving order and avoiding frame drops.
+
+## Software project practice
+
+| Concept | What you need to know here | Go deeper |
+| --- | --- | --- |
+| Environment and lockfile | `pyproject.toml` names project dependencies and optional inference packages. `uv.lock` fixes resolved versions; `.venv` holds installed packages for this machine. The Python version matters too. Use `uv sync --locked --extra inference --python 3.12` for the demo. | [uv project guide](https://docs.astral.sh/uv/guides/projects/) |
+| Configuration and provenance | The YAML file sets a run's source, model, thresholds, and output path. The run saves its resolved configuration and hashes of its source/model files. This lets you tell which inputs produced a result; the hash identifies bytes but does not measure model quality. | [Our configuration](../configs/inference.yaml) and [run manifest](reports/module01-smoke.json) |
+| Tests and CI | A unit or contract test checks one rule, such as restoring boxes or rejecting invalid coordinates. An integration smoke run checks that the real decoder and model work together. GitHub Actions is configured to run lightweight tests on new commits; the large model download and performance checks stay outside CI. | [Our contract tests](../tests/test_contracts.py), [pipeline tests](../tests/test_pipeline.py), and [GitHub's Python CI guide](https://docs.github.com/en/actions/tutorials/build-and-test-code/python) |
+| Small milestones | A *vertical slice* is a small, working path through the parts needed to deliver one usable behavior. In Module 01, it runs from a video file through decoding and detection to JSON results. The term pictures a slice cutting through several layers of a system. A module is complete when its stated behavior and evidence are present. | [Learning workflow](learning-workflow.md), [roadmap gates](roadmap.md), and [Agile Alliance's explanation of vertical slicing](https://agilealliance.org/resources/experience-reports/a-tale-of-slicing-and-imagination/) |
+
+**Vertical slice versus integration test:** the slice is the functionality we **build**; an integration test is a check we **run** to see whether its parts work together. For EdgeVision, the video-to-JSON pipeline is the slice. Running a real video through the decoder and detector, then checking the output, is an integration smoke test of that slice. The test does not replace the pipeline; it verifies it. Before an experiment, record what you expect, then separate what you observed from your explanation of it.
+
+You do not need to master CNN training, attention/RT-DETR, average precision, multi-object tracking, Kalman filters, ONNX, Docker, or cloud deployment before starting Module 01. They are introduced by the modules that use them. The next prerequisite after this walkthrough is the data/evaluation vocabulary in Module 02: class mapping, ignored annotations, data splits, IoU, precision, recall, and AP.

@@ -8,6 +8,7 @@ The goal is to develop deep-learning engineering and system-design skills throug
 
 ## Start here
 
+- [Prerequisite concepts](docs/prerequisites.md): the short computer vision, system design, and project-practice guide for Module 01.
 - [Project roadmap](docs/roadmap.md): scope, sequence, exercises, and completion gates.
 - [System architecture](docs/architecture.md): components, contracts, and runtime behavior.
 - [Learning workflow](docs/learning-workflow.md): how we will work and record lessons.

@@ -53,7 +53,7 @@ Specify exact types during implementation; the intended semantics are:
 - **Frame result:** schema version, frame identity/times, model-bundle version, detections, tracks, and processing status. An empty successful frame differs from a failed frame.
 - **Model bundle:** weights/runtime artifact, checksum, model/config versions, class mapping, input layout/dtype/shape, preprocessing/postprocessing policy, dependency/runtime requirements, and linked evaluation report.
 
-Keep vendor-specific tensors out of the tracker and API. Resolve configuration once at startup, validate it, and save the resolved values with every run.
+Keep library-specific tensors out of the tracker and API. Resolve configuration once at startup, validate it, and save the resolved values with every run.
 
 ## Modes and overload
 

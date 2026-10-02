@@ -44,7 +44,7 @@ Run offline throughput and paced replay separately. Use a fixed reference clip a
 | Target | Decision point | Evidence needed |
 | --- | --- | --- |
 | Source rate/resolution, runtime hardware | Module 00 | Hardware inventory and scenario |
-| Minimum useful FPS, maximum p95 frame age | Provisional in 00; freeze after 01 measurements | Paced replay report |
+| Minimum useful FPS, maximum p95 frame age | Provisional in 00; revisit after 01; freeze before 07 paced replay | Representative staged timing and paced replay report |
 | Memory ceiling and queue capacity | Provisional in 00; refine in 07 | Peak/steady-state memory and overload drill |
 | Export AP/recall and numerical tolerance | Before module 06 comparison | Parity report |
 | Permitted release accuracy regression | Before candidate promotion | Same-protocol baseline/candidate results |
