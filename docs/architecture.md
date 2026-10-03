@@ -57,6 +57,8 @@ Keep library-specific tensors out of the tracker and API. Resolve configuration 
 
 Module 01 detection and frame-result records are frozen after validation. Frame results store detections as a tuple to prevent collection edits; the serialized JSON contract still uses an array.
 
+Module 02 begins with a separate `Annotation` record and `audit-image` command for VisDrone DET ground truth. Native categories, inclusion flags, and truncation/occlusion attributes survive parsing; a versioned ten-class mapping is derived without changing the COCO inference contract. The current audit covers one image, not dataset-wide split integrity or official evaluation. See [the data walkthrough](modules/02-data.md) and [annotation-preservation decision](decisions/0003-preserve-visdrone-annotations.md).
+
 ## Modes and overload
 
 **Offline evaluation:** preserve every frame, order, and sequence boundary. Let the source slow down rather than dropping data. Tracking evaluation uses the complete sequence under its declared protocol.

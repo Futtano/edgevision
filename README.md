@@ -6,6 +6,8 @@ The goal is to develop deep-learning engineering and system-design skills throug
 
 **Status:** the first CPU video-inference slice is implemented and smoke-tested. No model has been trained, aerial accuracy evaluated, or streaming service implemented.
 
+Module 02 has begun with a [single-image annotation audit walkthrough](docs/modules/02-data.md). It uses synthetic fixtures to introduce VisDrone labels and ignore semantics before dataset acquisition and evaluation.
+
 ## Start here
 
 - [Prerequisite concepts](docs/prerequisites.md): the short computer vision, system design, and project-practice guide for Module 01.

@@ -5,8 +5,8 @@ This index tracks implementation and evidence, not assumed learner mastery; plan
 | Module | Status | Evidence |
 | --- | --- | --- |
 | [00 — Scope and budgets](00-scope.md) | Initial planning complete | Scenario, inspected environment, provisional budgets |
-| [01 — Inference slice](01-inference.md) | Implemented and smoke-tested; learner walkthrough ready | CPU tests, real detector run, tensor trace, fresh environment check |
-| 02 — Data and evaluation | Not started | — |
+| [01 — Inference slice](01-inference.md) | Implemented and smoke-tested; learner confirmed understanding on 2026-10-03 | CPU tests, real detector run, tensor trace, fresh environment check |
+| [02 — Data and evaluation](02-data.md) | In progress: single-image annotation audit implemented | Synthetic parser/CLI tests and overlay; real-data and evaluator gates open |
 | 03 — CNN baseline | Not started | — |
 | 04 — Transformer comparison | Not started | — |
 | 05 — Tracking | Not started | — |

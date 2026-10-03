@@ -1,6 +1,6 @@
 # 01 — Follow one frame through inference
 
-Status: implementation and smoke checks complete. The walkthrough and learner exercise below are ready; this does not imply that the learner has completed them. No training, aerial evaluation, or real-time benchmark has been performed.
+Status: implementation and smoke checks complete. On 2026-10-03, the learner confirmed understanding of the walkthrough, exercises, and pipeline structure. No training, aerial evaluation, or real-time benchmark has been performed.
 
 ## The question
 

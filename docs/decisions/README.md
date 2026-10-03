@@ -20,6 +20,8 @@ Status: accepted as the initial planning baseline; revise with evidence.
 
 ## Decisions to make during implementation
 
+Module 02's initial data boundary is recorded in [0003 — Preserve native VisDrone annotations](0003-preserve-visdrone-annotations.md). Training export and evaluator parity remain open decisions.
+
 - Exact detector checkpoints, framework versions, licensing, and compute budget — modules 00–03.
 - Dataset conversion/ignore policy and held-out evaluation protocol — module 02.
 - Deployment model choice based on accuracy, latency, and memory — module 04.
