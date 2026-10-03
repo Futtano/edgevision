@@ -32,8 +32,10 @@ def run(config: InferenceConfig, detector: Detector | None = None) -> dict:
     output.mkdir(parents=True, exist_ok=False)
     session_id = str(uuid4())
     summary = {"session_id": session_id, "status": "starting", "frames": 0}
+    # Run timing includes setup/hashing, processing, output, and resource cleanup.
     started = perf_counter()
     try:
+        # Requested settings with defaults/paths resolved; distinct from artifact identity.
         write_json(output / "config.json", config.model_dump(mode="json"))
         model_hash = sha256(config.weights)
         packages = {}
@@ -42,6 +44,7 @@ def run(config: InferenceConfig, detector: Detector | None = None) -> dict:
                 packages[name] = version(name)
             except PackageNotFoundError:
                 packages[name] = None
+        # Provenance: content hashes and environment identify what actually ran.
         write_json(
             output / "manifest.json",
             {
@@ -62,11 +65,16 @@ def run(config: InferenceConfig, detector: Detector | None = None) -> dict:
         if config.save_overlays:
             (output / "overlays").mkdir()
         summary["stop_reason"] = "eof"
+        # Equivalent to nested with blocks: close stream first, then flush/close sink.
+        # closing() calls generator.close() even after break or a consumer exception,
+        # unwinding the video reader's with block while it is suspended at yield.
         with (
             (output / "detections.jsonl").open("w") as sink,
             closing(frames(config.source)) as stream,
         ):
+            # Each iteration resumes the generator to decode/convert one frame, then pauses it.
             for frame in stream:
+                # Measure only detect(); decode is already timed by the frame generator.
                 start = perf_counter()
                 detections = active_detector.detect(frame.rgb)
                 detector_ms = (perf_counter() - start) * 1000
@@ -83,6 +91,8 @@ def run(config: InferenceConfig, detector: Detector | None = None) -> dict:
                     decode_ms=frame.decode_ms,
                     detector_ms=detector_ms,
                 )
+                # JSONL writes one independent record per frame, including empty detections.
+                # Earlier records survive handled failures without buffering the whole run.
                 sink.write(result.model_dump_json() + "\n")
                 if config.save_overlays:
                     image = Image.fromarray(frame.rgb)
@@ -106,6 +116,7 @@ def run(config: InferenceConfig, detector: Detector | None = None) -> dict:
         summary["error"] = str(exc)
         raise
     finally:
+        # Run outcome and duration, also on failure; excludes this final summary write.
         summary["elapsed_s"] = perf_counter() - started
         write_json(output / "summary.json", summary)
     return summary

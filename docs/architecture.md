@@ -55,6 +55,8 @@ Specify exact types during implementation; the intended semantics are:
 
 Keep library-specific tensors out of the tracker and API. Resolve configuration once at startup, validate it, and save the resolved values with every run.
 
+Module 01 detection and frame-result records are frozen after validation. Frame results store detections as a tuple to prevent collection edits; the serialized JSON contract still uses an array.
+
 ## Modes and overload
 
 **Offline evaluation:** preserve every frame, order, and sequence boundary. Let the source slow down rather than dropping data. Tracking evaluation uses the complete sequence under its declared protocol.

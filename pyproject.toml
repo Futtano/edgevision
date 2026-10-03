@@ -23,7 +23,11 @@ inference = ["ultralytics>=8.3,<9", "torch>=2.6,<3", "torchvision>=0.21,<1"]
 edgevision = "edgevision.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
+dev = [
+    "pytest>=8,<10",
+    "ruff>=0.11,<1",
+    "ty==0.0.84",
+]
 
 [tool.uv.sources]
 torch = [{ index = "pytorch-cpu" }]
@@ -43,3 +47,14 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ty.src]
+# Application code is the initial type-checking contract; tests/scripts remain linted.
+include = ["src"]
+
+[[tool.ty.overrides]]
+include = ["src/edgevision/detector.py"]
+
+[tool.ty.overrides.analysis]
+# Optional inference packages are absent in base CPU CI. Check their types when installed.
+allowed-unresolved-imports = ["torch", "ultralytics", "ultralytics.engine.results"]

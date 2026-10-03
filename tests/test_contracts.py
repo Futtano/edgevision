@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -59,3 +60,33 @@ def test_results_reject_out_of_frame_coordinates():
             decode_ms=0,
             detector_ms=0,
         )
+
+
+def test_frame_snapshot_preserves_validation_and_json_contract():
+    detection = Detection(xyxy=(0, 0, 20, 30), class_id=0, class_name="person", confidence=0.5)
+    supplied = [detection]
+    result = FrameResult(
+        session_id="test",
+        frame_index=0,
+        ingest_monotonic_s=1,
+        width=64,
+        height=48,
+        model_sha256="test",
+        detections=supplied,
+        decode_ms=0,
+        detector_ms=0,
+    )
+
+    # Neither a consumer nor the caller's original list can invalidate the snapshot.
+    with pytest.raises(ValidationError, match="frozen"):
+        result.width = 1
+    with pytest.raises(ValidationError, match="frozen"):
+        result.detections += (detection,)
+    with pytest.raises(ValidationError, match="frozen"):
+        detection.confidence = 2
+    supplied.clear()
+    assert result.detections == (detection,)
+
+    payload = json.loads(result.model_dump_json())
+    assert payload["detections"] == [json.loads(detection.model_dump_json())]
+    assert FrameResult.model_validate_json(result.model_dump_json()) == result

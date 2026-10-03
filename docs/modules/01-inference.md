@@ -132,17 +132,24 @@ The initial environment also selected Python 3.13 despite the project's 3.12 req
 
 ## Timing semantics and limits
 
+The video reader returns a `Generator[Frame, None, None]`: calling it does not open the video until iteration begins, and the type exposes its `close()` method. The pipeline uses `closing()` to unwind the reader's video context on early frame limits or consumer failures; a plain `Iterator` annotation hid that method from the type checker. Decode timing surrounds only decoder advancement/RGB conversion; the generator pauses during detection and output. Run timing additionally includes setup, hashing, output, and resource cleanup, but excludes the final summary write.
+
+`Detection` and `FrameResult` are frozen validated snapshots: field reassignment is rejected, and unknown input fields are forbidden. Since Pydantic freezing is shallow, `FrameResult.detections` is also a tuple, preventing collection edits that could bypass the frame-boundary validator. The adapter can still supply a list, which Pydantic converts; JSON output remains an array. Source-list mutation, rejected reassignment, and JSON round-trip compatibility are covered by a CPU contract test.
+
 `decode_ms` includes decoding and conversion to an RGB array. `detector_ms` includes our preprocessing, Ultralytics prediction/postprocessing, restoration, and detection validation. It excludes JSON serialization and overlays; the first value also includes lazy runtime setup. It is not pure neural-network forward time.
 
 `source_time_s` derives from presentation timestamp × time base, not `frame_index / FPS`; it can be absent. `ingest_monotonic_s` is host time after decoding. Subtracting those two clock domains would not measure latency. Full pipeline throughput, sustained frame age, memory ceilings, and p95/p99 need the later benchmark protocol.
 
 ## Completion evidence and next learning step
 
+Type checking is now a development dependency (`ty==0.0.84`) recorded in `uv.lock` and run in CI with `uv run --locked ty check`. The initial configured scope is application code under `src`; tests and inspection scripts remain covered by Ruff and runtime tests rather than this type-checking gate. Base CI omits optional inference packages, so only the three PyTorch/Ultralytics imports in the detector adapter may be unresolved. When the inference extra is installed, ty uses those packages' types normally. See [ty import configuration](https://docs.astral.sh/ty/reference/configuration/#allowed-unresolved-imports). Use the locked environment for regular checks rather than fetching ty through `uvx`.
+
 The CPU suite verifies geometry, validation, real video decoding with synthetic frames, orderly EOF, explicit frame limits, existing-output protection, and failed-run evidence. Run:
 
 ```bash
 .venv/bin/ruff check .
 .venv/bin/ruff format --check .
+.venv/bin/ty check
 .venv/bin/pytest -q
 ```
 
