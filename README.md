@@ -10,6 +10,8 @@ Module 02 has begun with a [single-image annotation audit walkthrough](docs/modu
 
 ## Start here
 
+Ruff lint/format checks and ty run before commits and pushes once the [local Git hooks](docs/learning-workflow.md#local-checks-before-commits-and-pushes) are installed. CI uses the same hook configuration.
+
 - [Prerequisite concepts](docs/prerequisites.md): the short computer vision, system design, and project-practice guide for Module 01.
 - [Project roadmap](docs/roadmap.md): scope, sequence, exercises, and completion gates.
 - [System architecture](docs/architecture.md): components, contracts, and runtime behavior.

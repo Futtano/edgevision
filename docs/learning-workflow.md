@@ -13,6 +13,28 @@ We work one module at a time. Each module connects an observable behavior to the
 
 The learner can choose whether to implement a piece first or walk through it with the guide. Do not turn routine progress into a quiz or permission gate. Use occasional teach-back questions to reveal gaps: “Where do these coordinates live?” or “What happens if the consumer stops reading?”
 
+## Local checks before commits and pushes
+
+Install the locked environment and Git hooks once per checkout:
+
+```bash
+uv sync --locked --extra inference --python 3.12
+.venv/bin/pre-commit install
+```
+
+For base-only CPU development, omit `--extra inference`. Hook installation enables both `pre-commit` and `pre-push` using the defaults in [.pre-commit-config.yaml](../.pre-commit-config.yaml). It is local to your checkout; committing the configuration does not install hooks for other contributors.
+
+Both stages run Ruff lint, Ruff formatting checks, and ty with the project environment's locked tools. Checks cover the whole project for Ruff and the configured application-source scope for ty, even when only documentation changes. Formatting is checked without rewriting files; correct formatting with `.venv/bin/ruff format .`, review the changes, and stage them before retrying.
+
+Run the hooks manually before committing:
+
+```bash
+.venv/bin/pre-commit run --all-files
+.venv/bin/pre-commit run --all-files --hook-stage pre-push
+```
+
+Local hook entries use `uv run --locked --no-sync` to retain optional inference packages and avoid changing the environment during Git operations. Synchronize explicitly after dependency or lockfile changes. CI creates the locked base environment and runs the same hook configuration, followed by pytest. Tests remain a separate check; run `.venv/bin/pytest -q` locally when validating a change. No model or dataset downloads are required by these hooks. See the [pre-commit reference](https://pre-commit.com/) for hook lifecycle details.
+
 ## Documentation commitments
 
 - Document important discoveries, mistakes, tradeoffs, and results in the same change as the relevant implementation whenever practical.
